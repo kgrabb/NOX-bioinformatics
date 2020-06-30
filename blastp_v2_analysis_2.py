@@ -145,18 +145,19 @@ Phylogenetic tree using coral sequences that show most simlartiy with NOX
 Using Biopython, pieced together wtih muscle on Poseidon and different commands
 This one uses a fasta file to build a tree
 """
-# %%
+# %% Import all programs
 import Bio 
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
-
-
+from matplotlib.lines import Line2D as ln
+import pandas as pd 
 
 from Bio import AlignIO
 from Bio import Phylo
 from Bio.Phylo.TreeConstruction import DistanceCalculator
 from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
+import os
 #from Bio.Phylo.Applications import PhymlCommandline
 #from Bio.Phylo.PAML import codeml
 #from Bio.Phylo.PhyloXML import Phylogeny
@@ -168,7 +169,7 @@ from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
 # %% File import
 msaFile = "/muscleAlignmentCoralSeq.msa"
 
-import os
+
 path = os.getcwd()
 #path = "/Users/kgrabb/Documents/2018.05CoralLarvae/Genomes/Poseidon/blastResults/v2"
 print(path)
@@ -255,22 +256,34 @@ plotTree(tree, figFile)
 
 # %% Plot tree using a def function and importing xml file from Poseidon processing
 from Bio import Phylo
+from Bio.Phylo import PhyloXML as PX
 #from Bio.Phylo.Consesus import *
 
+path = os.getcwd()
 figFileName = "treeFig2.png"
 figFile = path+"/graphs"+figFileName
-treeFileName = "treeFileCoral.xml"
+treeFileName = "treeFileCoralUPGMAD.xml" #change this filename
 treeFile = path+"/"+treeFileName
 treeFilePhylo = Phylo.read(treeFile, 'phyloxml')
 
+nox1File = path+"/treeCoralSeqOnlyNox1"
+nox1Names = pd.read_csv(nox1File, squeeze=True)
 nox2File = path+"/treeCoralSeqOnlyNox2"
-nox2Names = pd.read_csv(nox2File)
+nox2Names = pd.read_csv(nox2File, squeeze=True)
+nox3File = path+"/treeCoralSeqOnlyNox3"
+nox3Names = pd.read_csv(nox3File, squeeze=True)
+nox4File = path+"/treeCoralSeqOnlyNox4"
+nox4Names = pd.read_csv(nox4File, squeeze=True)
+nox5File = path+"/treeCoralSeqOnlyNox5"
+nox5Names = pd.read_csv(nox5File, squeeze=True)
+noxDFile = path+"/treeCoralSeqOnlyNoxD"
+noxDNames = pd.read_csv(noxDFile, squeeze=True)
 
-def plotTree(treedata, treeFigure, nox2):
+def plotTree(treedata, treeFigure, nox1, nox2, nox3, nox4, nox5, noxD):
     SMALL_SIZE = 8
     MEDIUM_SIZE = 20
     BIGGER_SIZE = 40
-    titleName = "All NOX-like"
+    titleName = f"NOX2-like Protein Sequences in Coral \n Bootstrap 100, UPMGA \n {treeFileName}"
     colorRoot = "gray"
 
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
@@ -278,29 +291,164 @@ def plotTree(treedata, treeFigure, nox2):
     plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
     plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('legend', fontsize=15)    # legend fontsize
     plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
     fig = plt.figure(figsize=(15,20), dpi=100)
     axes=fig.add_subplot(1,1,1)
 
     treedata.root.color = colorRoot
-    #treedata.common_ancestor({"name":"KXJ24335.1"}).color = "blue"
-    #treedata.common_ancestor("KXJ24335.1").color = "blue"
-    treedata.common_ancestor(nox2).color = "blue"
-    
-    #for clade in tree.find_clades(terminal=True):
-     #   clade.color=Phylo.PhyloXML.BranhColor(0,0,250)
-     #   Phylo.write(treedata, "colored.xml", "phyloxml")
+    treedata.root.width = 2
+    for Clade in treedata.find_clades():
+        if Clade.is_terminal():
+            Clade.color = PX.BranchColor.from_name('black')
+            for i in nox1:
+                if i==Clade.name: 
+                    Clade.color = PX.BranchColor.from_hex('#7fc97f') #green
+            for i in nox2:
+                if i==Clade.name: 
+                    Clade.color = PX.BranchColor.from_hex('#f0027f') #pink
+            for i in nox3Names:
+                if i==Clade.name: 
+                    Clade.color = PX.BranchColor.from_hex('#ffff99') #yellow
+            for i in nox4:
+                if i==Clade.name: 
+                    Clade.color = PX.BranchColor.from_hex('#386cb0') #blue
+            for i in nox5:
+                if i==Clade.name: 
+                    Clade.color = PX.BranchColor.from_hex('#fdc086') #peach
+            for i in noxD:
+                if i==Clade.name: 
+                    Clade.color = PX.BranchColor.from_hex('#beaed4') #lavender
+        else:
+            Clade.color = PX.BranchColor.from_name('gray')
+
 
     plt.title(titleName, fontsize=BIGGER_SIZE)
-    #treedata.clade({"name": "adi2mcaRNA8168_R0"}).color = "blue"
+    legendLines = [ln([0], [0], color=('#7fc97f'), lw=2), 
+        ln([0], [0], color=('#f0027f'), lw=2), ln([0], [0], color=('#ffff99'), lw=2),
+        ln([0], [0], color=('#386cb0'), lw=2), ln([0], [0], color=('#fdc086'), lw=2),
+        ln([0], [0], color=('#beaed4'), lw=2)]
+    plt.legend(legendLines, ['NOX1', 'NOX2', 'NOX3', 'NOX4', 'NOX5', 'DUOX'], loc="lower left")
     Phylo.draw(treedata, axes=axes, branch_labels=None)
     plt.savefig(treeFigure, dpi=100)
     return 
 
+plotTree(treeFilePhylo, figFile, nox1Names, nox2Names, nox3Names, nox4Names, nox5Names, noxDNames)
 
-returned = plotTree(treeFilePhylo, figFile, nox2Names)
+
+# %% Plot bootstrapped trees using a def function and importing xml file from Poseidon processing
+# this one has the colored tree and is used most recently!
+#This code requries a set of bootstrapped trees to be input
+#import the packages specific to this section
+from Bio import Phylo
+from Bio.Phylo import PhyloXML as PX
+
+#Import tree file. the filename can be changed to draw different trees
+path = os.getcwd()
+figFileName = "treeFig2.png" #this does not work, currently
+figFile = path+"/graphs"+figFileName
+treeFileName = "treeFileCoralNox_NJ100.xml" #Change filename here
+treeFile = path+"/"+treeFileName
+treeFilePhylo = Phylo.parse(treeFile, 'phyloxml')
+
+#Import files with names only, no sequences for each color desired
+nox1File = path+"/treeCoralSeqOnlyNox1"
+nox1Names = pd.read_csv(nox1File, squeeze=True)
+nox2File = path+"/treeCoralSeqOnlyNox2"
+nox2Names = pd.read_csv(nox2File, squeeze=True)
+nox3File = path+"/treeCoralSeqOnlyNox3"
+nox3Names = pd.read_csv(nox3File, squeeze=True)
+nox4File = path+"/treeCoralSeqOnlyNox4"
+nox4Names = pd.read_csv(nox4File, squeeze=True)
+nox5File = path+"/treeCoralSeqOnlyNox5"
+nox5Names = pd.read_csv(nox5File, squeeze=True)
+noxDFile = path+"/treeCoralSeqOnlyNoxD"
+noxDNames = pd.read_csv(noxDFile, squeeze=True)
+
+#def function to plot trees
+def plotTree(trees, treeFigure, nox1, nox2, nox3, nox4, nox5, noxD):
+    #Title and root color
+    titleName = f"NOX Protein Sequences \n Bootstrap 100, Neighbor Joining \n {treeFileName}"
+    colorRoot = "gray"
+    widthRoot = 2
+
+    #Set sizes of fonts
+    SMALL_SIZE = 8
+    MEDIUM_SIZE = 20
+    BIGGER_SIZE = 30
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=15)    # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+    #Set figure size and dpi
+    fig = plt.figure(figsize=(15,20), dpi=100)
+    axes=fig.add_subplot(1,1,1)
+
+    #For each tree within the bootstrapped trees, do the following
+    for treedata in trees:
+        #Set color and width of root. variables are changed above
+        treedata.root.color = colorRoot
+        treedata.root.width = widthRoot
+
+        #Comment in and out below for Root options
+        #can use either inner 66 or midpoint for data that has both human duox1 and duox2
+        #Inner66 for upgma and Inner1 for NJ for Hum files
+
+        #treedata.root_with_outgroup('Inner65')
+        #treedata.root_at_midpoint()
+
+        #for each clade, change color based on imported names in file
+        #colors are in hex format. 
+        #Can also use BranchColor.from_name('name') or BranchColor('RGB')
+        for Clade in treedata.find_clades():
+            if Clade.is_terminal():
+                Clade.color = PX.BranchColor.from_name('black')
+                for i in nox1:
+                    if i==Clade.name: 
+                        Clade.color = PX.BranchColor.from_hex('#7fc97f') #green
+                for i in nox2:
+                    if i==Clade.name: 
+                        Clade.color = PX.BranchColor.from_hex('#f0027f') #pink
+                for i in nox3Names:
+                    if i==Clade.name: 
+                        Clade.color = PX.BranchColor.from_hex('#ffff99') #yellow
+                for i in nox4:
+                    if i==Clade.name: 
+                        Clade.color = PX.BranchColor.from_hex('#386cb0') #blue
+                for i in nox5:
+                    if i==Clade.name: 
+                        Clade.color = PX.BranchColor.from_hex('#fdc086') #peach
+                for i in noxD:
+                    if i==Clade.name: 
+                        Clade.color = PX.BranchColor.from_hex('#beaed4') #lavender
+            else:
+                Clade.color = PX.BranchColor.from_name('gray')
+
+    #title and legend
+    plt.title(titleName, fontsize=BIGGER_SIZE)
+    legendLines = [ln([0], [0], color=('#7fc97f'), lw=2), 
+        ln([0], [0], color=('#f0027f'), lw=2), ln([0], [0], color=('#ffff99'), lw=2),
+        ln([0], [0], color=('#386cb0'), lw=2), ln([0], [0], color=('#fdc086'), lw=2),
+        ln([0], [0], color=('#beaed4'), lw=2)]
+    #plt.legend(legendLines, ['NOX1', 'NOX2', 'NOX3', 'NOX4', 'NOX5', 'DUOX'], loc="upper right")
+    
+    #ladderize tree - this places the closest node on top
+    treedata.ladderize()
+
+    #Draw tree
+    Phylo.draw(treedata, axes=axes, branch_labels=None)
+
+    #Save figure, this does not work currently
+    plt.savefig(treeFigure, dpi=100)
+    return 
+
+#Call function to plot tree with tree data, figure file, and names for the colors
+plotTree(treeFilePhylo, figFile, nox1Names, nox2Names, nox3Names, nox4Names, nox5Names, noxDNames)
 
 
 # %%
@@ -389,4 +537,3 @@ out_log, err_log = cmdline()
 
 
 # %%
-
