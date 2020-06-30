@@ -8,7 +8,7 @@
 
 ---
 
-### Outline
+## Outline
 
 1. [Coral sequence query](#Coral-sequence-query)
    1. [Visualize query results](#Visualize-query-results)
@@ -16,7 +16,7 @@
    1. [Blast script](#Blast-script)
    2. [Sorting blast results](#Sorting-blast-results)
    3. [Visualizing blast results](#Visualizing-blast-results)
-3. [Tree Construction](#Tree-construction)
+3. [Tree Construction](#Tree-Construction)
    1. [Create multiple sequence alignments](#create-multiple-sequence-alignments)
    2. [Create a tree file](#Create-a-tree-file)
    3. [Visualizing trees](#Visualizing-trees)
@@ -24,7 +24,7 @@
 
 ---
 
-### 1. Coral sequence query
+## Coral sequence query
 
  In this section, the annotated coral protein sequences from reefgenomics.org were downloaded into a file on Poseidon. Basic commandline bash was then used to query the annotated genomes and determine how often the keywords occured.
 
@@ -66,7 +66,7 @@ Using Matlab, the reef genome query results were plotted into a bar graph. This 
 
 ---
 
-### 2. Blast analysis with NOX proteins
+## Blast analysis with NOX proteins
 
 #### Blast script
 
@@ -308,7 +308,7 @@ plt.show()
 
 ---
 
-### 3. Tree Construction
+## Tree Construction
 
 #### Create multiple sequence alignments
 
@@ -561,7 +561,7 @@ plotTree(treeFilePhylo, figFile, nox1Names, nox2Names, nox3Names, nox4Names, nox
 
 ---
 
-### 4. Pfam and Hmm
+## Pfam and Hmm
 
 **Building Hmm from Pfam** 
 
