@@ -70,7 +70,7 @@ Using Matlab, the reef genome query results were plotted into a bar graph. This 
 
 #### Blast script
 
-**Preparation of NOX and Coral sequences**
+*Preparation of NOX and Coral sequences*
 
 This portion of analysis was completed by taking a reference database of NOX protein sequences from Kawahara et al., 2007 and querying the coral sequences. The coral sequences were obtained from different sources on the internet.
 
@@ -94,7 +94,7 @@ less ../../blastSlrm/v2Script/coralSeqv2
 
 
 
-**Blastp the coral sequences for NOX-like proteins**
+*Blastp the coral sequences for NOX-like proteins*
 
 Next, blastp was run on Poseidon. There are two ways, first, blastp was run through a slurm script. This took a few seconds. The slurm script was as follows:
 
@@ -147,7 +147,7 @@ blastp -query noxSeqCat -db coralSeqCat -out blastp_nox_coral_v1_taboutput.txt -
 
 #### Sort blastp results
 
-**Sort by cutoff values**
+*Sort by cutoff values*
 
 Blastp results were sorted by percent ID (column 3), e-value (column 11), and bit score (column 12). The `sort` command sorts alphabetically. These results were piped into a new file.
 
@@ -165,7 +165,7 @@ awk '{if ($11<=1e-70 && $3>=50 && $12>=300) print}' blastp_nox_coral_v1_taboutpu
 
 
 
-**Edit headers and FASTA files**
+*Edit headers and FASTA files*
 
 To remove the carrot in front of the header, either can be used in Poseidon commandline. Output files can be provided to pipe `|` the files into. The `$0` prints the whole line and the first line prints just the headers. `sed` removes the `>`
 
@@ -304,15 +304,13 @@ plt.show()
 
 
 
-
-
 ---
 
 ## Tree Construction
 
 #### Create multiple sequence alignments
 
-**Run a Python script on Poseidon**
+*Run a Python script on Poseidon*
 
 Use the SeqIO package in Biopython to parse out specific sequences for the tree. This portion of the code will be run on Poseidon. The script will be written in Python language, but run by commandline on Poseidon. Here is a brief outline of how to run a Python script on Poseidon:
 
@@ -327,7 +325,7 @@ Use the SeqIO package in Biopython to parse out specific sequences for the tree.
 4. Run the Python scritp. 
    1. In the`bash` commandline (exit Python mode first), type `python {scriptname}`. Note: if the script is in a different directory than where the command is being run, be sure to include the filepath in `{filename}`
 
-**Script to parse out sequences**
+*Script to parse out sequences*
 
 Use the `SeqIO` package in Biopython to parse out specific sequences. Start with the coral sequence database `coralSeqCopy` with sequencese in fasta format. Create a file with a list of headers for the specific sequences that you want `treeCoralSeqOnly`. the output file will be `bioCoralSeqRecord`. Write the following script in Python and store it on Poseidon. Use the command `python {scriptname}` to run it, as described above. This script is called `biopython_script1_v2`. 
 
@@ -358,7 +356,7 @@ print(str(count) + " records selected out of " + str(total))
 
 
 
-**Multiple Sequence Alignment**
+*Multiple Sequence Alignment*
 
 Use `muscle` to create a multiple sequence alignement. The input is a `fasta` file and the output is a multiple sequence alignment. This is completed on Poseidon `bash` commandline:
 
@@ -395,7 +393,7 @@ AlignIO.convert(inFile, "fasta", outFile, "phylip-relaxed")
 
 
 
-**Create tree files**
+*Create tree files*
 
 Use `AlignIO` to to create tree files from the `.phy` file created in the step above. The output file is a `phyloxml` , `.xml`. This format allows the Biopython package to color the nodes and therefore is advised to use. To change to `nexus` or `newick`, change the `phyloxml`. The calculator default is `identity`. The constructor can process neighbor joining, `nj`, or `upgma`. `bootstrap_trees` creates the number of trees indicated so that the tree can then be bootstraped when it is visualized. The following script is called `biopython_align_tree-v2` and is run in the Poseidon commandline.
 
@@ -563,7 +561,7 @@ plotTree(treeFilePhylo, figFile, nox1Names, nox2Names, nox3Names, nox4Names, nox
 
 ## Pfam and Hmm
 
-**Building Hmm from Pfam** 
+*Building Hmm from Pfam*
 
 Proteins have domains that define the functional regions of the protein. Pfam is a database of the conserved domains. The Pfam consists of multiple sequence alignments and the probablistic representation is displated in a hidden Markov model (HMM). These alignments are made from seed alignments, which are a smaller subset of alignments known to belong to the domain. Hmm profiles can be used to search against a larger database to find other homologous sequences.
 
@@ -621,7 +619,7 @@ This script took ~1hr to run, however 9hr was requested.
 
 
 
-**Processing pfam search and scan results**
+*Processing pfam search and scan results*
 
 Pfam search and scan results appear similar to blast results, yet they tend to be more strict on the cut offs. To analyze the results briefly, the sequence headers for the sequences that appears in the results were parsed out. The following code was run on Poseidon commandline. The input files were the direct results from the script above.
 
