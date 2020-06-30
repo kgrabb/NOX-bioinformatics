@@ -10,14 +10,17 @@
 
 ### Outline
 
-1. [Coral sequence query] (#Coral-sequence-query)
-   1. [Visualize query results] (#Visualize-query-results)
-2. [Blast analysis with NOX proteins] (#Blast-analysis-with-NOX-proteins) 
-   1. [Blast script] (#Blast-script)
-   2. [Sorting blast results] (#Sorting-blast-results)
-3. [Visualizing blast results] (#Visualizing-blast-results)
-4. [Tree Construction] (#Tree-construction)
-5. [Pfam and Hmm] (#Pfam-and-Hmm)
+1. [Coral sequence query](#Coral-sequence-query)
+   1. [Visualize query results](#Visualize-query-results)
+2. [Blast analysis with NOX proteins](#Blast-analysis-with-NOX-proteins) 
+   1. [Blast script](#Blast-script)
+   2. [Sorting blast results](#Sorting-blast-results)
+   3. [Visualizing blast results](#Visualizing-blast-results)
+3. [Tree Construction](#Tree-construction)
+   1. [Create multiple sequence alignments](#create-multiple-sequence-alignments)
+   2. [Create a tree file](#Create-a-tree-file)
+   3. [Visualizing trees](#Visualizing-trees)
+4. [Pfam and Hmm](#Pfam-and-Hmm)
 
 ---
 
@@ -64,6 +67,8 @@ Using Matlab, the reef genome query results were plotted into a bar graph. This 
 ---
 
 ### 2. Blast analysis with NOX proteins
+
+#### Blast script
 
 **Preparation of NOX and Coral sequences**
 
@@ -140,9 +145,9 @@ blastp -query noxSeqCat -db coralSeqCat -out blastp_nox_coral_v1_taboutput.txt -
 
 
 
-**Sort blastp results**
+#### Sort blastp results
 
-*Sort by cutoff values*
+**Sort by cutoff values**
 
 Blastp results were sorted by percent ID (column 3), e-value (column 11), and bit score (column 12). The `sort` command sorts alphabetically. These results were piped into a new file.
 
@@ -160,7 +165,7 @@ awk '{if ($11<=1e-70 && $3>=50 && $12>=300) print}' blastp_nox_coral_v1_taboutpu
 
 
 
-*Edit headers and FASTA files*
+**Edit headers and FASTA files**
 
 To remove the carrot in front of the header, either can be used in Poseidon commandline. Output files can be provided to pipe `|` the files into. The `$0` prints the whole line and the first line prints just the headers. `sed` removes the `>`
 
@@ -211,9 +216,7 @@ cut -f3 coralSeqSelectTreeNoxOnly2 > treeCoralSeqOnlyNox2
 
 
 
----
-
-### 3. Visualizing Blast Results
+#### Visualizing Blast Results
 
 To visualize general patterns of the results from Blast, heatmaps were created. Heat maps show the relationship between coral species (y-axis) and NOX sequences (x-axis) and the given Blast result (color gradient associated iwth e-value, bit score, or percent ID). To do this, the parsed blast results were imported into Python and a Python script in the desktop program was run as follows.
 
@@ -305,11 +308,11 @@ plt.show()
 
 ---
 
-### 4. Tree Construction
+### 3. Tree Construction
 
-**Parse out specific tree sequences**
+#### Create multiple sequence alignments
 
-*Run a Python script on Poseidon* 
+**Run a Python script on Poseidon**
 
 Use the SeqIO package in Biopython to parse out specific sequences for the tree. This portion of the code will be run on Poseidon. The script will be written in Python language, but run by commandline on Poseidon. Here is a brief outline of how to run a Python script on Poseidon:
 
@@ -324,7 +327,7 @@ Use the SeqIO package in Biopython to parse out specific sequences for the tree.
 4. Run the Python scritp. 
    1. In the`bash` commandline (exit Python mode first), type `python {scriptname}`. Note: if the script is in a different directory than where the command is being run, be sure to include the filepath in `{filename}`
 
-*Script to parse out sequences* 
+**Script to parse out sequences**
 
 Use the `SeqIO` package in Biopython to parse out specific sequences. Start with the coral sequence database `coralSeqCopy` with sequencese in fasta format. Create a file with a list of headers for the specific sequences that you want `treeCoralSeqOnly`. the output file will be `bioCoralSeqRecord`. Write the following script in Python and store it on Poseidon. Use the command `python {scriptname}` to run it, as described above. This script is called `biopython_script1_v2`. 
 
@@ -373,7 +376,7 @@ cat bioCoralSeqRecord bioNoxSeqRecordHajjar.fas > bioCoralNoxSeqRecord
 
 
 
-**Create a tree file**
+#### Create a tree file
 
 Use the multiple sequence alignment to create a tree file. This is completed through a series of Python scripts that are run on Poseidon, as described above. These scripts use the Biopython module.
 
@@ -392,7 +395,7 @@ AlignIO.convert(inFile, "fasta", outFile, "phylip-relaxed")
 
 
 
-*Create tree files*
+**Create tree files**
 
 Use `AlignIO` to to create tree files from the `.phy` file created in the step above. The output file is a `phyloxml` , `.xml`. This format allows the Biopython package to color the nodes and therefore is advised to use. To change to `nexus` or `newick`, change the `phyloxml`. The calculator default is `identity`. The constructor can process neighbor joining, `nj`, or `upgma`. `bootstrap_trees` creates the number of trees indicated so that the tree can then be bootstraped when it is visualized. The following script is called `biopython_align_tree-v2` and is run in the Poseidon commandline.
 
@@ -420,7 +423,7 @@ Phylo.write(trees, outputFile, 'phyloxml')
 
 
 
-**Visualizing tree**
+#### Visualizing trees
 
 Using the `.xml` tree file, the tree can be visualized in Python. To do this, the `.xml` file was pulled down from Poseidon onto the local computer and the following code was written in a Python program. This file is called `blastp_v2_analysis_2.py`. 
 
@@ -558,7 +561,7 @@ plotTree(treeFilePhylo, figFile, nox1Names, nox2Names, nox3Names, nox4Names, nox
 
 ---
 
-### 5. Pfam and Hmm
+### 4. Pfam and Hmm
 
 **Building Hmm from Pfam** 
 
