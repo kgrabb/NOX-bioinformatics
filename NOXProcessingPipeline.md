@@ -12,8 +12,8 @@
 
 1. [Coral sequence query](#Coral-sequence-query)
    1. [Visualize query results](#Visualize-query-results)
-2. [Blast analysis with NOX proteins](#Blast-analysis-with-NOX-proteins) 
-   1. [Blast script](#Blast-script)
+2. [Blast analysis with NOX proteins](#Blast-analysis-with-NOX-proteins)  
+   1. [ Blast script](#Blast-script)
    2. [Sorting blast results](#Sorting-blast-results)
    3. [Visualizing blast results](#Visualizing-blast-results)
 3. [Tree Construction](#Tree-Construction)
@@ -26,7 +26,7 @@
 
 ## Coral sequence query
 
- In this section, the annotated coral protein sequences from reefgenomics.org were downloaded into a file on Poseidon. Basic commandline bash was then used to query the annotated genomes and determine how often the keywords occured.
+In this section, the annotated coral protein sequences from reefgenomics.org were downloaded into a file on Poseidon. Basic commandline bash was then used to query the annotated genomes and determine how often the keywords occured.
 
 Files from reefgenomics.org were obtained using the `wget` code as follows. This then places a file in the current directory on Poseidon
 
@@ -142,6 +142,14 @@ blastp -query noxSeqCat -db coralSeqCat -out blastp_nox_coral_v1_taboutput.txt -
 ```
 
 `outfit 6` formats the output for tabular form.
+
+To restrict the number of alignment outputs, you can use the following command with `num_alignments`:
+
+``` bash
+blastp -query noxSeqCat -db coralSeqCat -out blastp_nox_coral_test3_taboutput.txt -outfmt 6 -num_alignments 10
+```
+
+
 
 
 
@@ -421,7 +429,73 @@ Phylo.write(trees, outputFile, 'phyloxml')
 
 
 
-#### Visualizing trees
+#### Bash script to execute msa and tree scripts
+
+To run the script above in one pipeline, the following bash script can be run. The filenames in each of the scripts above must be changed manually for each file that is targeted. The following bash script can be run by typing `bash pipeline_script_v1`.
+
+``` bash
+#!/usr/bin/env python
+
+chmod +x biopython_script_v1
+python ./biopython_script_v1
+
+chmod +x muscle_script
+bash ./muscle_script
+
+chmod +x biopython_align_convert
+python ./biopython_align_convert
+
+chmod +x biopython_align_tree_v2
+python ./biopython_align_tree_v2
+
+```
+
+
+
+#### Changing names within tree
+
+To change the names of species within a script, use this python code. Import the `.xml` file into python along with a spreadsheet of headers and names in the same rows.
+
+```python
+import pandas as pd
+import xml.etree.ElementTree as ET
+
+path = "/Users/kgrabb/Documents/2018.05CoralLarvae/Genomes/Poseidon/hmmer/v5Analysis/"
+fileTree = "treeFileCoralSeqKwNOXFinal_nj100.xml" #this does not work, currently
+treeFile = path+fileTree
+outFile = "treeFileCoralSeqKwNOXFinal_nj100_named.xml"
+treeOut = path+outFile
+
+fileHeaders = "coralFinal_KwNox_pfam_search_combo.csv"
+headersFile = path+fileHeaders
+
+
+headers = pd.read_csv(headersFile)
+#print(headers.head(5))
+
+with open(treeFile, encoding='UTF-8') as f:
+    xmlTree = ET.parse(f)
+    rootElement = xmlTree.getroot()
+
+    for i in range(len(headers)):
+        findStr=headers['coralSequence'][i]
+        replaceStr=headers['coralName'][i]
+
+        for element in rootElement.getiterator():
+            try:
+                element.text=element.text.replace(findStr, replaceStr)
+            except AttributeError:
+                pass
+
+xmlTree.write(treeOut, encoding='UTF-8', xml_declaration = True)
+
+```
+
+
+
+
+
+#### Visualizing trees with python
 
 Using the `.xml` tree file, the tree can be visualized in Python. To do this, the `.xml` file was pulled down from Poseidon onto the local computer and the following code was written in a Python program. This file is called `blastp_v2_analysis_2.py`. 
 
@@ -563,7 +637,7 @@ plotTree(treeFilePhylo, figFile, nox1Names, nox2Names, nox3Names, nox4Names, nox
 
 *Building Hmm from Pfam*
 
-Proteins have domains that define the functional regions of the protein. Pfam is a database of the conserved domains. The Pfam consists of multiple sequence alignments and the probablistic representation is displated in a hidden Markov model (HMM). These alignments are made from seed alignments, which are a smaller subset of alignments known to belong to the domain. Hmm profiles can be used to search against a larger database to find other homologous sequences.
+Proteins have domains that define the functional regions of the protein. Pfam is a database of the conserved domains. The Pfam consists of multiple sequence alignments and the probablistic representation is displayed in a hidden Markov model (HMM). These alignments are made from seed alignments, which are a smaller subset of alignments known to belong to the domain. Hmm profiles can be used to search against a larger database to find other homologous sequences.
 
 Here, a few Pfams were available for NOX online at pfam.xam.org. Pfam `.seed` files were downloaded to Poseidon using `wget`. A slurm script was written on Poseidon to first build a `hmm` profile and then perform `hmmscan` and `hmmsearch` against coral sequences for three different pfam seeds. 
 
@@ -617,14 +691,234 @@ date
 
 This script took ~1hr to run, however 9hr was requested.
 
+*Run pfam in the home directory of Poseidon*
 
+To build a hmmer profile in the home directory of Poseidon, the following script can be run. This uses sequences that are chosen and parsed into a fasta file, as described previously in `biopython_script_v1`. These sequences are then aligned using `muscle` and a hmmer profile is then built. To execute this script, type `bash hmmCoralNoxScript.sh`
 
-*Processing pfam search and scan results*
+``` bash
+#!/bin/bash
 
-Pfam search and scan results appear similar to blast results, yet they tend to be more strict on the cut offs. To analyze the results briefly, the sequence headers for the sequences that appears in the results were parsed out. The following code was run on Poseidon commandline. The input files were the direct results from the script above.
+#To create a hmm profile from a fasta file of sequences
+module load bio
+module load muscle
+module load hmmer
+
+#Create multiple sequence alignment
+muscle -in noxSeqKawaharaEditedNox1 -out muscleAlignmentKwNox1.msa
+
+#Create hmm profile
+hmmbuild noxSeqKwNox1.hmm muscleAlignmentKwNox1.msa
+hmmpress noxSeqKwNox1.hmm
+hmmsearch --tblout coral_KwNox1_pfam_search noxSeqKwNox1.hmm coralSeqv2
+
+```
+
+Once the profiles are built, the last line can be used to run additional analysis. It did not work 
+
+*Viewing corals in pfam results*
+
+Pfam search and scan results appear similar to blast results, yet they tend to be more strict on the cut offs. To analyze the results briefly, the sequence headers for the sequences that appears in the results were parsed out. The following code was run on Poseidon commandline. The input files were the direct results from the script above. These sequence headers were then put into excel and compared to the sequence headers of blast to see where overlaps existed. They were similar to blast.
 
 ``` bash
 sed '/^#/d' coral_PF01794_pfam_search |sort -u | awk '{print $1}'  > coralSeqUniqPF01794Search 
 sed '/^#/d' coral_PF01794_pfam_scan |awk '{print $4}' | sort -u  > coralSeqUniqPF01794Scan
+```
+
+
+
+*Processing step to choose sequences for tree*
+
+On the second round of pfam and hmmer processing, the goal was to make a tree out of specific sequences. Each Nox type was analyzed seperately in order to classify sequences with each Nox type. In order to make a tree out of the pfam results, I chose a cut-off e-value of e-100. I then took the headers for the sequences that fit the parameter. To do this, I ran the following script in Poseidon commandline. Using this list of headers, tree files were created following the protocol above.
+
+``` bash
+sed '/^#/d' coral_KwNox1_pfam_search | awk '{if ($5<=1e-100) print}'  > ../v2Analysis/coral_KwNox1_pfam_search_e100 
+cut -d' ' -f1 coral_KwNox1_pfam_search_e100 | sort -u > coralHeadersNox1
+```
+
+In order to color the tree accordingly, the Nox headers were flagged as different Nox types. The headers from each Nox type were then concatonated together. A list of all e-values were added into excel and analyzed to see which Nox type had the lowest evalue for each of the sequences. The "best fit" pfam sequences were then brought back into Poseidon and the headers were parsed into seperate files to be able to flag the tree accordingly.
+
+``` bash
+cat coralHeadersNox1 coralHeadersNox2 coralHeadersNox3 coralHeadersNox4 coralHeadersNoxD | sort -u > coralHeadersNoxall
+awk '{if ($8=="NOX2") print}' pfamBestFit > pfamBestFitNox2
+cut -f1 pfamBestFitNox2 > pfamBestFitHeadersNox2
+```
+
+In the process of making different trees, different files of sequences were concatonated. Here are some, in order to track which sequences are in which files
+
+``` bash
+cat bioCoralSeqKwNox1.fas bioCoralSeqKwNox2.fas bioCoralSeqKwNox3.fas bioCoralSeqKwNox4.fas bioCoralSeqKwNoxD.fas > bioCoralSeqKwNoxall.fas
+cat bioCoralSeqKwNoxall.fas noxSeqKawaharaEdited > bioCoralSeqKwEditedNoxall.fas
+cat bioCoralSeqKwEditedNoxall.fas nemveNox2Seq.fas nemveNox4Seq.fas > bioCoralSeqKwEditedNoxallNemve.fas
+cat bioCoralSeqKwNoxall.fas nemveNox2Seq.fas nemveNox4Seq.fas > bioCoralSeqKwNoxallNemve.fas
+```
+
+#### Search for Specific Domanis
+
+In order to see if specific domains exist in Nox (i.e p22phox), i took the known sequences of the different domains from Kawahara et al., 2007 and preformed hmmer and blast against the coral sequences that were already parsed out through the pfam searches. In hmmsearch and hmmscan with the domains, no results were returned. The code was checked and NOX returned results. This could be due to the differences in lengths for what was being compared. I also did a blast a found some results. These are compiled into a spreadsheet `coral_KwNox_pfam_search_combo`.
+
+### Targeting Porites Astreoides
+
+*Porites asteroids* is a species that is very important for us to analyze. Therefore, the sequences were searched for NOX-like proteins that were from the *P. Asteroids* protein sequences. While one or two genomes showed up in the blast, pfam did not have any sequences that were less than e^-100. Instead, the sequences that were the highest agreement in the pfam were pulled out. These are noted in the ppt entitled `PoritesAstreoidesUpdate20200716`. These sequences were then parsed out using the `biopython_script_v1` pipeline and added to the trees that were made in pfam above. Through the trees, we are able to tell how closely related the *P. Astreoides* sequences are to other NOX-like sequences. The one chosen *P. Astreoides* format is sequence 6302. This is also known to have a NAD binding super family.
+
+### Choosing an e-value cut-off to ensure all NOX-like proteins are included
+
+In the beginning i chose an e-value cutoff of e^-100. I determined this was too strict, so (with recommendtaion from Harriet Alexander) I proceeded to determine what e-value cutoff was appropriate. In order to do this, the FASTA sequences were obatined from the headers (obtained by using `sed` in the steps above to choose an e-value cut off, pulling out just the headers, and adding `coralSequence` at the top of the headers):
+
+```bash
+sed '/^#/d' coral_KwNox1_pfam_search | awk '{if ($5<=1e-100) print}'  > ../v2Analysis/coral_KwNox1_pfam_search_e100 
+cut -d' ' -f1 coral_KwNox1_pfam_search_e100 | sort -u > coralHeadersNox1
+```
+
+In order to speed up the ability to parse through multiple search files, this script is run by typing in `bash {scriptname}`
+
+```bash
+for j in *_search; do
+        sed '/^#/d' $j | awk '{if ($5<=10^-5) print}'  > "$j"_10-5
+        cut -d' ' -f1 "$j"_10-5 | sort -u > "$j"_Headers
+done 
+```
+
+To add in "coralSequence" to the beginning of each file, use this script:
+
+```bash 
+for j in *Headers; do
+        sed -i '1 i\coralSequence' $j
+done
+```
+
+To cut everything past the first space
+
+```bash
+sed 's/\s.*$//' coralFinalHeaders_3 > coralFinalHeaders_only
+```
+
+The `coralHeadersNox1` are amended on the first line by adding `coralSequence`. By using the `biopython_script_v1`, as described above in [Tree Construction](#Create-multiple-sequence-alignments), the FASTA sequences were pulled out: 
+
+```bash
+import Bio
+from Bio import SeqIO
+import pandas as pd
+inputFile="coralSeqCopy"
+outputFile="bioCoralSeqKwNox2_10-5.fas"
+coralSeqFile="coralHeadersNox2_10-5 "
+
+seqs = pd.read_csv(coralSeqFile)
+
+count=0
+total=0
+outputHandle = (open(outputFile,"w"))
+for record in SeqIO.parse(inputFile, "fasta"):
+        total = total+1
+        # if seqs['coralSequence'].str.contains(record.id).any():
+        # if seqs['coralSequence'].str.lower().any() == record.id:
+        if seqs['coralSequence'].str.contains(record.id+"$").any():
+                count = count +1
+                SeqIO.write(record,outputHandle,"fasta")
+outputHandle.close()
+print(str(count) + " records selected out of " + str(total))
+print("biopython_script_v1 complete.\n Sequences from ", coralSeqFile, " were parsed from ", inputFile, " and s$
+```
+
+The FASTA sequences in `bioCoralSeqKwNox2_10-5.fas` were then blaseted against the nr databased online on NCBI. In order to determine if the cutoff value was appropriate, blast a given e-value against the nr database and makes ure the top hits are retturning the correct functional gene. Keep increasing the e-value until the e-value is the wrong protein. The blast script was based off of blast above, but is explicitly as shown here:
+
+```bash
+#!/bin/bash
+
+#SBATCH --partition=compute                             # Queue selection
+#SBATCH --job-name=blast_coralAll_kwNox2_e3_v1           # Job name
+#SBATCH --mail-type=ALL                                 # Mail events (BEGIN, END, FAIL, ALL)
+#SBATCH --mail-user=kgrabb@whoi.edu                     # Where to send mail
+#SBATCH --ntasks=1                                      # Run on a single CPU
+#SBATCH --mem=100gb                                       # Job memory request
+#SBATCH --time=15:00:00                                 # Time limit hrs:min:sec
+#SBATCH --output=serial_job_%j.log                      # Standard output/error
+ 
+pwd; hostname; date
+ 
+echo "Running blastp for Kawahara NOX and all coral sequences on a single CPU core"
+
+module load python3             # Load the python module
+module load bio                 # Load bioinformatics package
+module load blast               # Load blast
+export BLASTDB=/vortexfs1/omics/data/blastdb
+
+
+echo "Running blast script on a single CPU core"
+ 
+blastp -query bioCoralSeqKwNox2e3.fas  -db nr -out blast_coralAll_kwNox2_e3_v1_taboutput.txt -outfmt 6
+
+date
+```
+
+To get the headers of all of the corals, this lined formed a file with all of the new headers:
+
+```bash
+sort -u coralHeadersNox1_10-5 coralHeadersNox2_10-5 coralHeadersNox3_10-5 coralHeadersNox4_10-5 coralHeadersNox5_10-5 coralHeadersNoxD_10-5 > coralHeadersNoxall_10-5
+```
+
+
+
+## Translating Transcriptomes to Proteomes
+
+Transrate was first tried to translate transcriptomes to proteomes. This was used to dowload transrate (https://hibberdlab.com/transrate/index.html):
+
+```bash
+wget https://bintray.com/artifact/download/blahah/generic/transrate-1.0.3-linux-x86_64.tar.gz
+```
+
+All dependencies were downloaded:
+
+```bash
+transrate --install-deps all
+```
+
+A refernce genome was downloaded for Nematostella. Transrate was then used to try and assemble the proteome:
+
+```bash
+transrate --assembly Cyphastrea_serailia_transcriptome_REL.fa --reference ../../refGenomes/UP000001593_45351.fasta
+```
+
+Transrate produced contigs, but there was an issue with Optimist for it to convert to peptides.
+
+
+
+Next, I downloaded TransDecoder to try becuase it was clear that it produced peptides (https://angus.readthedocs.io/en/2016/functional_annotation.html)
+
+```bash
+curl -L https://github.com/transdecoder/transdecoder/archive/2.0.1.tar.gz > transdecoder.tar.gz
+tar xzf transdecoder.tar.gz
+cd TransDecoder-2.0.1
+make
+PATH=$PATH:$(pwd)
+```
+
+Each new login, repeat the last two commands in the `TransDecoder-2.0.1` folder. The first one may not be necessary, but try both.
+
+I then ran the script to translate the transcriptome sequences:
+
+```bash
+TransDecoder.LongOrfs -t shallowCoral/Diploastrea_heliopora_transcriptome_REL.fa -m 30
+```
+
+This produces amino acid sequences for the ORFs in the .pep file.
+
+Another way to get at the amino acid sequences without ORF is through Emboss transeq. While I tried to find a command line version of this, I had to suffice at using the web version, which maxed out with too low of gigabytes.
+
+Transcriptomics peptide files were amended with the species names using the following: 
+
+```bash
+sed -e 's/>/>Dendsp_/g' longest_orfs_copy.pep > longest_orfs_copy_edit.pep
+```
+
+To compare these new sequences to Pfam profiles for NOX, use the following line:
+
+```bash
+hmmsearch --tblout coral_KwNox1_pfam_search noxSeqKwNox1.hmm coralSeqv2
+```
+
+To change the headers of the transcriptomics to have a single identifier, as well as the database so that `biopython_script_v1` can parse out sequences.
+
+```bash
+sed -i 's/|m/_m/g' deepSeaCoralTranslatedAll_copy_m.fa 
 ```
 
